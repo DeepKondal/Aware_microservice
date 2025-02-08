@@ -1,0 +1,44 @@
+_format_version: "3.0"
+_transform: true
+
+upstreams:
+  - name: user_service_upstream  # Single upstream for user service
+    targets:
+      - target: user-service-v1:5000
+        weight: ${USER_SERVICE_V1_WEIGHT}
+      - target: user-service-v2:5000
+        weight: ${USER_SERVICE_V2_WEIGHT}
+  - name: order_service_upstream
+    targets:
+      - target: order-service:5000
+        weight: 100
+
+services:
+  - name: kong_order_service
+    url: http://order_service_upstream
+    protocol: http
+    routes:
+      - name: order_service_route
+        paths:
+          - "/orders"
+          - "/orders/(?<order_id>[\\w-]+)/(?<action>(status|details))"
+        strip_path: false
+        preserve_host: true  # Added preserve_host
+        methods:
+          - GET
+          - POST
+          - PUT
+
+  - name: kong_user_service
+    url: http://user_service_upstream  # Point to upstream instead of direct service
+    protocol: http
+    routes:
+      - name: user_service_route
+        paths:
+          - "/users/"
+          - "/users/(?<user_id>[\\w-]+)"
+        strip_path: false
+        methods:
+          - POST
+          - PUT
+

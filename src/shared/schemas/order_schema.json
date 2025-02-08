@@ -1,0 +1,90 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Order",
+    "type": "object",
+    "properties": {
+        "orderId": {
+            "type": "string",
+            "description": "The unique identifier for an order"
+        },
+        "userId": {
+            "type": "string",
+            "description": "The unique identifier for a user"
+        },
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "description": "The unique identifier for an item"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Quantity of the item ordered"
+                    },
+                    "price": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Price of the item"
+                    }
+                },
+                "required": ["itemId", "quantity", "price"]
+            },
+            "description": "List of items in the order"
+        },
+        "userEmails": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "email"
+            },
+            "description": "A list of email addresses associated with the order"
+        },
+        "deliveryAddress": {
+            "type": "object",
+            "properties": {
+                "street": {
+                    "type": "string",
+                    "description": "Street address"
+                },
+                "city": {
+                    "type": "string",
+                    "description": "City"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State"
+                },
+                "postalCode": {
+                    "type": "string",
+                    "description": "Postal code"
+                },
+                "country": {
+                    "type": "string",
+                    "description": "Country"
+                }
+            },
+            "required": ["street", "city", "state", "postalCode", "country"],
+            "description": "The delivery address of the user"
+        },
+        "orderStatus": {
+            "type": "string",
+            "enum": ["under process", "shipping", "delivered"],
+            "description": "Current status of the order"
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the order was created."
+        },
+        "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the order was last updated."
+        }
+    },
+    "required": ["orderId", "items", "userEmails", "deliveryAddress", "orderStatus"]
+}

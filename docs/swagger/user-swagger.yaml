@@ -1,0 +1,160 @@
+swagger: "2.0"
+info:
+  version: "1.0"
+  title: API
+basePath: /
+tags:
+- name: users
+  description: User related operations
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  /users/:
+    post:
+      tags:
+      - users
+      summary: Handles the HTTP POST request to create a new user
+      description: |-
+        This method performs the following steps:
+        1. Parses the JSON data from the request.
+        2. Validates the presence and format of required fields.
+        3. Ensures no additional fields are present in the request.
+        4. Validates the structure of the 'deliveryAddress' field.
+        5. Checks if any of the provided email addresses already exist in the database.
+        6. Generates a unique userId for the new user.
+        7. Inserts the new user data into the database.
+        8. Retrieves and returns the newly created user.
+        Returns:
+            tuple: A tuple containing the newly created user data and the HTTP status code 201.
+        Raises:
+            werkzeug.exceptions.HTTPException: If the JSON data is invalid, required fields are missing,
+                               additional fields are present, or email addresses already exist.
+      operationId: post_user_list
+      parameters:
+      - in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      - name: X-Fields
+        in: header
+        description: An optional fields mask
+        required: false
+        type: string
+        format: mask
+      responses:
+        "201":
+          description: Success
+          schema:
+            $ref: '#/definitions/User'
+  /users/{id}:
+    put:
+      tags:
+      - users
+      summary: Update user information based on the provided user ID
+      description: |-
+        Args:
+            id (str): The unique identifier of the user.
+        Returns:
+            dict: A list containing the old user data and the updated user data.
+        Raises:
+            HTTPException: If the JSON data is invalid.
+            HTTPException: If any field other than 'emails' or 'deliveryAddress' is present.
+            HTTPException: If neither 'emails' nor 'deliveryAddress' is provided.
+            HTTPException: If 'emails' is not a list of valid email addresses.
+            HTTPException: If 'deliveryAddress' is not a valid object with required fields.
+            HTTPException: If the user with the given ID is not found.
+      operationId: put_user
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+      - in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      - name: X-Fields
+        in: header
+        description: An optional fields mask
+        required: false
+        type: string
+        format: mask
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/User'
+        "404":
+          description: User not found
+definitions:
+  User:
+    type: object
+    required:
+    - deliveryAddress
+    - emails
+    - userId
+    properties:
+      userId:
+        type: string
+        description: The unique identifier for a user account
+      firstName:
+        type: string
+        description: First name of the user
+      lastName:
+        type: string
+        description: Last name of the user
+      emails:
+        type: array
+        description: A list of email addresses associated with the user
+        items:
+          type: string
+      deliveryAddress:
+        $ref: '#/definitions/User_deliveryAddress'
+      phoneNumber:
+        type: string
+        description: "Optional phone number for the user, 10-15 digits."
+        pattern: "^[0-9]{10,15}$"
+      createdAt:
+        type: string
+        format: date-time
+        description: Timestamp of when the user was created.
+      updatedAt:
+        type: string
+        format: date-time
+        description: Timestamp of when the user was last updated.
+  DeliveryAddress:
+    type: object
+    required:
+    - city
+    - country
+    - postalCode
+    - state
+    - street
+    properties:
+      street:
+        type: string
+        description: Street address
+      city:
+        type: string
+        description: City
+      state:
+        type: string
+        description: State
+      postalCode:
+        type: string
+        description: Postal code
+      country:
+        type: string
+        description: Country
+  User_deliveryAddress:
+    type: object
+    description: The delivery address of the user
+responses:
+  ParseError:
+    description: When a mask can't be parsed
+  MaskError:
+    description: When any error occurs on mask

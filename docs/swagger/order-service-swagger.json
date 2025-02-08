@@ -1,0 +1,350 @@
+{
+	"swagger": "2.0",
+	"basePath": "/",
+	"paths": {
+		"/orders/": {
+			"post": {
+				"responses": {
+					"201": {
+						"description": "Success",
+						"schema": {
+							"$ref": "#/definitions/Order"
+						}
+					}
+				},
+				"summary": "Handles the HTTP POST request to create a new order",
+				"description": "This method performs the following steps:\n1. Parses the JSON data from the request.\n2. Validates the presence and format of required fields.\n3. Ensures no additional fields are present in the request.\n4. Validates the structure of the 'items' and 'deliveryAddress' fields.\n5. Generates a unique orderId for the new order.\n6. Inserts the new order data into the database.\n7. Retrieves and returns the newly created order.\nReturns:\n    tuple: A tuple containing the newly created order data and the HTTP status code 201.\nRaises:\n    werkzeug.exceptions.HTTPException: If the JSON data is invalid, required fields are missing,\n                       additional fields are present, or email addresses already exist.",
+				"operationId": "post_order_list",
+				"parameters": [
+					{
+						"name": "payload",
+						"required": true,
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/Order"
+						}
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"orders"
+				]
+			},
+			"get": {
+				"responses": {
+					"200": {
+						"description": "Success",
+						"schema": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/Order"
+							}
+						}
+					}
+				},
+				"summary": "Handles the HTTP GET request to retrieve orders by status",
+				"description": "This method performs the following steps:\n1. Parses the 'status' parameter from the request.\n2. Retrieves orders with the specified status from the database.\n3. Returns the list of orders.\nReturns:\n    list: A list of orders with the specified status.\nRaises:\n    werkzeug.exceptions.HTTPException: If the 'status' parameter is missing or invalid.",
+				"operationId": "get_order_list",
+				"parameters": [
+					{
+						"in": "query",
+						"description": "The status of the orders to retrieve",
+						"name": "status",
+						"type": "string"
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"orders"
+				]
+			}
+		},
+		"/orders/{id}/details": {
+			"parameters": [
+				{
+					"name": "id",
+					"in": "path",
+					"required": true,
+					"type": "string"
+				}
+			],
+			"put": {
+				"responses": {
+					"404": {
+						"description": "Order not found"
+					},
+					"200": {
+						"description": "Success",
+						"schema": {
+							"$ref": "#/definitions/Order"
+						}
+					}
+				},
+				"summary": "Update the emails or delivery address of an existing order based on the provided order ID",
+				"description": "Args:\n    id (str): The unique identifier of the order.\nReturns:\n    dict: The updated order data.\nRaises:\n    HTTPException: If the JSON data is invalid.\n    HTTPException: If any field other than 'userEmails' or 'deliveryAddress' is present.\n    HTTPException: If neither 'userEmails' nor 'deliveryAddress' is provided.\n    HTTPException: If 'userEmails' is not a list of valid email addresses.\n    HTTPException: If 'deliveryAddress' is not a valid object with required fields.\n    HTTPException: If the order with the given ID is not found.",
+				"operationId": "put_order_details",
+				"parameters": [
+					{
+						"name": "payload",
+						"required": true,
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/OrderDetails"
+						}
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"orders"
+				]
+			}
+		},
+		"/orders/{id}/status": {
+			"parameters": [
+				{
+					"name": "id",
+					"in": "path",
+					"required": true,
+					"type": "string"
+				}
+			],
+			"put": {
+				"responses": {
+					"404": {
+						"description": "Order not found"
+					},
+					"200": {
+						"description": "Success",
+						"schema": {
+							"$ref": "#/definitions/Order"
+						}
+					}
+				},
+				"summary": "Update the status of an existing order based on the provided order ID",
+				"description": "Args:\n    id (str): The unique identifier of the order.\nReturns:\n    dict: The updated order data.\nRaises:\n    HTTPException: If the JSON data is invalid.\n    HTTPException: If the 'orderStatus' field is missing or invalid.\n    HTTPException: If the order with the given ID is not found.",
+				"operationId": "put_order_status",
+				"parameters": [
+					{
+						"name": "payload",
+						"required": true,
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/OrderStatus"
+						}
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"orders"
+				]
+			}
+		}
+	},
+	"info": {
+		"title": "API",
+		"version": "1.0"
+	},
+	"produces": [
+		"application/json"
+	],
+	"consumes": [
+		"application/json"
+	],
+	"tags": [
+		{
+			"name": "orders",
+			"description": "Order related operations"
+		}
+	],
+	"definitions": {
+		"Order": {
+			"required": [
+				"deliveryAddress",
+				"items",
+				"orderId",
+				"orderStatus",
+				"userEmails",
+				"userId"
+			],
+			"properties": {
+				"orderId": {
+					"type": "string",
+					"description": "The unique identifier for an order"
+				},
+				"userId": {
+					"type": "string",
+					"description": "The unique identifier for a user"
+				},
+				"items": {
+					"type": "array",
+					"description": "List of items in the order",
+					"items": {
+						"$ref": "#/definitions/Item"
+					}
+				},
+				"userEmails": {
+					"type": "array",
+					"description": "A list of email addresses associated with the order",
+					"items": {
+						"type": "string"
+					}
+				},
+				"deliveryAddress": {
+					"description": "The delivery address of the user",
+					"allOf": [
+						{
+							"$ref": "#/definitions/DeliveryAddress"
+						}
+					]
+				},
+				"orderStatus": {
+					"type": "string",
+					"description": "Current status of the order",
+					"example": "under process",
+					"enum": [
+						"under process",
+						"shipping",
+						"delivered"
+					]
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "Timestamp of when the order was created."
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "Timestamp of when the order was last updated."
+				}
+			},
+			"type": "object"
+		},
+		"Item": {
+			"required": [
+				"itemId",
+				"price",
+				"quantity"
+			],
+			"properties": {
+				"itemId": {
+					"type": "string",
+					"description": "The unique identifier for an item"
+				},
+				"quantity": {
+					"type": "integer",
+					"description": "Quantity of the item ordered",
+					"minimum": 1
+				},
+				"price": {
+					"type": "number",
+					"description": "Price of the item",
+					"minimum": 0
+				}
+			},
+			"type": "object"
+		},
+		"DeliveryAddress": {
+			"required": [
+				"city",
+				"country",
+				"postalCode",
+				"state",
+				"street"
+			],
+			"properties": {
+				"street": {
+					"type": "string",
+					"description": "Street address"
+				},
+				"city": {
+					"type": "string",
+					"description": "City"
+				},
+				"state": {
+					"type": "string",
+					"description": "State"
+				},
+				"postalCode": {
+					"type": "string",
+					"description": "Postal code"
+				},
+				"country": {
+					"type": "string",
+					"description": "Country"
+				}
+			},
+			"type": "object"
+		},
+		"OrderStatus": {
+			"required": [
+				"orderStatus"
+			],
+			"properties": {
+				"orderStatus": {
+					"type": "string",
+					"description": "Current status of the order",
+					"example": "under process",
+					"enum": [
+						"under process",
+						"shipping",
+						"delivered"
+					]
+				}
+			},
+			"type": "object"
+		},
+		"OrderDetails": {
+			"properties": {
+				"userEmails": {
+					"type": "array",
+					"description": "A list of email addresses associated with the order",
+					"items": {
+						"type": "string"
+					}
+				},
+				"deliveryAddress": {
+					"description": "The delivery address of the user",
+					"allOf": [
+						{
+							"$ref": "#/definitions/DeliveryAddress"
+						}
+					]
+				}
+			},
+			"type": "object"
+		}
+	},
+	"responses": {
+		"ParseError": {
+			"description": "When a mask can't be parsed"
+		},
+		"MaskError": {
+			"description": "When any error occurs on mask"
+		}
+	}
+}

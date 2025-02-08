@@ -1,0 +1,197 @@
+{
+	"swagger": "2.0",
+	"basePath": "/",
+	"paths": {
+		"/users/": {
+			"post": {
+				"responses": {
+					"201": {
+						"description": "Success",
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					}
+				},
+				"summary": "Handles the HTTP POST request to create a new user",
+				"description": "This method performs the following steps:\n1. Parses the JSON data from the request.\n2. Validates the presence and format of required fields.\n3. Ensures no additional fields are present in the request.\n4. Validates the structure of the 'deliveryAddress' field.\n5. Checks if any of the provided email addresses already exist in the database.\n6. Generates a unique userId for the new user.\n7. Inserts the new user data into the database.\n8. Retrieves and returns the newly created user.\nReturns:\n    tuple: A tuple containing the newly created user data and the HTTP status code 201.\nRaises:\n    werkzeug.exceptions.HTTPException: If the JSON data is invalid, required fields are missing,\n                       additional fields are present, or email addresses already exist.",
+				"operationId": "post_user_list",
+				"parameters": [
+					{
+						"name": "payload",
+						"required": true,
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"users"
+				]
+			}
+		},
+		"/users/{id}": {
+			"parameters": [
+				{
+					"name": "id",
+					"in": "path",
+					"required": true,
+					"type": "string"
+				}
+			],
+			"put": {
+				"responses": {
+					"404": {
+						"description": "User not found"
+					},
+					"200": {
+						"description": "Success",
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					}
+				},
+				"summary": "Update user information based on the provided user ID",
+				"description": "Args:\n    id (str): The unique identifier of the user.\nReturns:\n    dict: A list containing the old user data and the updated user data.\nRaises:\n    HTTPException: If the JSON data is invalid.\n    HTTPException: If any field other than 'emails' or 'deliveryAddress' is present.\n    HTTPException: If neither 'emails' nor 'deliveryAddress' is provided.\n    HTTPException: If 'emails' is not a list of valid email addresses.\n    HTTPException: If 'deliveryAddress' is not a valid object with required fields.\n    HTTPException: If the user with the given ID is not found.",
+				"operationId": "put_user",
+				"parameters": [
+					{
+						"name": "payload",
+						"required": true,
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/User"
+						}
+					},
+					{
+						"name": "X-Fields",
+						"in": "header",
+						"type": "string",
+						"format": "mask",
+						"description": "An optional fields mask"
+					}
+				],
+				"tags": [
+					"users"
+				]
+			}
+		}
+	},
+	"info": {
+		"title": "API",
+		"version": "1.0"
+	},
+	"produces": [
+		"application/json"
+	],
+	"consumes": [
+		"application/json"
+	],
+	"tags": [
+		{
+			"name": "users",
+			"description": "User related operations"
+		}
+	],
+	"definitions": {
+		"User": {
+			"required": [
+				"deliveryAddress",
+				"emails",
+				"userId"
+			],
+			"properties": {
+				"userId": {
+					"type": "string",
+					"description": "The unique identifier for a user account"
+				},
+				"firstName": {
+					"type": "string",
+					"description": "First name of the user"
+				},
+				"lastName": {
+					"type": "string",
+					"description": "Last name of the user"
+				},
+				"emails": {
+					"type": "array",
+					"description": "A list of email addresses associated with the user",
+					"items": {
+						"type": "string"
+					}
+				},
+				"deliveryAddress": {
+					"description": "The delivery address of the user",
+					"allOf": [
+						{
+							"$ref": "#/definitions/DeliveryAddress"
+						}
+					]
+				},
+				"phoneNumber": {
+					"type": "string",
+					"description": "Optional phone number for the user, 10-15 digits.",
+					"pattern": "^[0-9]{10,15}$"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "Timestamp of when the user was created."
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "Timestamp of when the user was last updated."
+				}
+			},
+			"type": "object"
+		},
+		"DeliveryAddress": {
+			"required": [
+				"city",
+				"country",
+				"postalCode",
+				"state",
+				"street"
+			],
+			"properties": {
+				"street": {
+					"type": "string",
+					"description": "Street address"
+				},
+				"city": {
+					"type": "string",
+					"description": "City"
+				},
+				"state": {
+					"type": "string",
+					"description": "State"
+				},
+				"postalCode": {
+					"type": "string",
+					"description": "Postal code"
+				},
+				"country": {
+					"type": "string",
+					"description": "Country"
+				}
+			},
+			"type": "object"
+		}
+	},
+	"responses": {
+		"ParseError": {
+			"description": "When a mask can't be parsed"
+		},
+		"MaskError": {
+			"description": "When any error occurs on mask"
+		}
+	}
+}
