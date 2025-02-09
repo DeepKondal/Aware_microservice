@@ -1,114 +1,116 @@
+version: '3.8'
 
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  neo4j_data:
+  shared_python_packages:  # Shared volume for Python dependencies
 
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongo-container
-    hostname: mongodb
-    environment:
-      - MONGO_INITDB_DATABASE=${DATABASE_NAME}
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+  neo4j:
+    image: neo4j:5.13
+    container_name: neo4j
     ports:
-      - "27017:27017"
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}  # ✅ Uses env vars
     volumes:
-      - mongodb_data:/data/db
-  
-  mongodb-setup:
-    image: python:3.10-slim
-    container_name: mongo-setup
-    build:
-      context: .
-      dockerfile: src/shared/config/mongodb/Dockerfile
-    depends_on:
-      - mongodb
-    env_file:
-      - .env
-    links:
-      - mongodb
-      
-  order-service:
-    build:
-      context: ./src
-      dockerfile: order_service/Dockerfile
-    container_name: order-service
-    environment:
-      - FLASK_APP=order_service.wsgi:app
-      - FLASK_ENV=${FLASK_ENV}
-      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${DATABASE_NAME}?authSource=admin
-      - DATABASE_NAME=${DATABASE_NAME}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
-      - RABBITMQ_PORT=${RABBITMQ_PORT}
-      - RABBITMQ_USER=${RABBITMQ_ORDER_USER}
-      - RABBITMQ_PASSWORD=${RABBITMQ_ORDER_PASSWORD}
-      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
-    ports:
-      - "5001:5000"
-    depends_on:
-      rabbitmq:
-          condition: service_healthy
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD}", "MATCH (n) RETURN COUNT(n);"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    networks:
+      - app_network
 
-  user-service-v1:
-    build:
-      context: ./src
-      dockerfile: user_service_v1/Dockerfile
-    container_name: user-service-v1
-    environment:
-      - FLASK_APP=user_service_v1.wsgi:app
-      - FLASK_ENV=${FLASK_ENV}
-      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${DATABASE_NAME}?authSource=admin
-      - DATABASE_NAME=${DATABASE_NAME}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
-      - RABBITMQ_PORT=${RABBITMQ_PORT}
-      - RABBITMQ_USER=${RABBITMQ_USER_USER}
-      - RABBITMQ_PASSWORD=${RABBITMQ_USER_PASSWORD}
-      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
-    ports:
-      - "5002:5000"
-    depends_on:
-      rabbitmq:
-          condition: service_healthy
-  
-  user-service-v2:
-    build:
-      context: ./src
-      dockerfile: user_service_v2/Dockerfile
-    container_name: user-service-v2
-    environment:
-      - FLASK_APP=user_service_v2.wsgi:app
-      - FLASK_ENV=${FLASK_ENV}
-      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${DATABASE_NAME}?authSource=admin
-      - DATABASE_NAME=${DATABASE_NAME}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
-      - RABBITMQ_PORT=${RABBITMQ_PORT}
-      - RABBITMQ_USER=${RABBITMQ_USER_USER}
-      - RABBITMQ_PASSWORD=${RABBITMQ_USER_PASSWORD}
-      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
-    ports:
-      - "5003:5000"
-    depends_on:
-      rabbitmq:
-          condition: service_healthy
-  
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq-container
     hostname: rabbitmq
     ports:
-      - "5673:5673" # RabbitMQ messaging port
-      - "15672:15672" # RabbitMQ management UI
-    expose:
-      - 5673
-      - 15672
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-      RABBITMQ_NODE_PORT: 5673 # had to change the default port because of a conflict with the mongodb port 
+      RABBITMQ_NODE_PORT: 5672
     healthcheck:
-      test: rabbitmq-diagnostics check_port_connectivity
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
       timeout: 30s
       retries: 3
+    restart: always
+    networks:
+      - app_network
+
+  dataprocess:
+    build: ./src/dataprocess
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    command: uvicorn dataprocess_server:app --host 0.0.0.0 --port 8001
+    volumes:
+      - shared_python_packages:/usr/local/lib/python3.10/site-packages  # Shared dependencies
+    restart: always
+    networks:
+      - app_network
+
+  model-service:
+    build: ./src/modelserver
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    command: uvicorn model_server:app --host 0.0.0.0 --port 8002
+    volumes:
+      - shared_python_packages:/usr/local/lib/python3.10/site-packages  # Shared dependencies
+    restart: always
+    networks:
+      - app_network
+
+  xai-service:
+    build: ./src/xaiserver
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      model-service:
+        condition: service_healthy
+    ports:
+      - "8003:8003"
+    command: uvicorn xai_server:app --host 0.0.0.0 --port 8003
+    volumes:
+      - shared_python_packages:/usr/local/lib/python3.10/site-packages  # Shared dependencies
+    restart: always
+    networks:
+      - app_network
+
+  center-service:
+    build: ./src
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      xai-service:
+        condition: service_healthy
+    ports:
+      - "8880:8880"
+    command: uvicorn center_server:app --host 0.0.0.0 --port 8880
+    volumes:
+      - shared_python_packages:/usr/local/lib/python3.10/site-packages  # Shared dependencies
+    restart: always
+    networks:
+      - app_network
 
   kong:
     image: kong:latest
@@ -134,8 +136,13 @@ services:
       - "8001:8001"
       - "8444:8444"
     depends_on:
-      - order-service
-      - user-service-v1
+      center-service:
+        condition: service_healthy
+      dataprocess:
+        condition: service_healthy
+    restart: always
+    networks:
+      - app_network
 
   konga: 
     container_name: api-gateway-ui
@@ -144,6 +151,6 @@ services:
       - NODE_ENV=production
     ports:
       - "1337:1337"
-
-volumes:
-  mongodb_data:
+    restart: always
+    networks:
+      - app_network

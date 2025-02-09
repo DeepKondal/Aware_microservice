@@ -1,0 +1,38 @@
+# ✅ FastAPI & Web Server
+fastapi==0.110.1
+uvicorn==0.30.0
+
+# ✅ Neo4j Graph Database Client
+neo4j==5.20.0
+
+# ✅ RabbitMQ Messaging
+pika==1.3.2
+
+# ✅ HTTP Request Handling
+requests==2.32.3
+httpx==0.27.0
+aiohttp==3.9.5
+
+# ✅ PyTorch for Machine Learning Models
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
+
+# ✅ XAI & Attention-based Models
+matplotlib==3.9.0
+pydantic==2.7.1
+
+# ✅ Cloud Storage (If Using Azure Blob Storage)
+azure-storage-blob==12.19.1
+
+# ✅ JSON & Configuration Handling
+python-dotenv==1.0.1
+certifi==2025.1.31
+charset-normalizer==3.4.1
+idna==3.10
+urllib3==2.3.0
+
+# ✅ Web App Security
+blinker==1.9.0
+click==8.1.8
+Werkzeug==3.1.3

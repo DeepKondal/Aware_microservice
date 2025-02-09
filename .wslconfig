@@ -1,0 +1,4 @@
+[wsl2]
+memory=8GB  # Adjust based on available RAM (e.g., 4GB, 8GB, or more)
+processors=4  # Adjust based on available CPU cores
+swap=4GB  # Optional, defines swap space
