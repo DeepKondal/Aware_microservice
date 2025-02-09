@@ -167,3 +167,11 @@ The project requires certain environment variables to be set for proper configur
 ## Conclusion
 
 The Aware-Microservices project showcases the implementation of a microservices architecture using modern technologies. By following the instructions provided, you can set up and run the project on your local machine, gaining insights into the workings of a microservices-based system.
+
+
+
+
+##Notes by Abideep
+To run this, install Rabbitmq and make sure a user is created as id & pwd - 'guest'
+Also, rename the .env.example --> .env 
+To run this, run docker-compose build in the same directory as docker-compose.yml file.
